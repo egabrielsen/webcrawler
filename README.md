@@ -2,7 +2,8 @@
 A ruby based web crawler that pull information from lyle.smu.edu/~fmoore/ and creates an inverted index, a word frequency list, a list of pages, and all links.
 
 ##Software
-<ul>Software Used:
+Software Used:
+<ul>
 <li>Ruby version 1.9.3</li>
 <li>Mechanize Gem </li>
 <li>Nokogiri Gem</li>
@@ -12,7 +13,8 @@ A ruby based web crawler that pull information from lyle.smu.edu/~fmoore/ and cr
 This web crawler uses ruby version 1.9.3. I use RVM to control which verion of ruby to use during a program. There are other ways to install ruby, however the steps below assume rvm is installed<br><br>
 To install the correct ruby version run <code>rvm install ruby-1.9.3</code><br>
 Next install the mechanize gem, which directs you to the correct web page, and Nokogiri, the html parser used as the web crawler<br>
-<code>gem install mechanize</code><code>gem install nokogiri</code>
+<code>gem install mechanize</code><br>
+<code>gem install nokogiri</code>
 
 ##Use
 To use the web crawler, run from terminal:
