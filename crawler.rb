@@ -1,4 +1,7 @@
 require "mechanize"
+require 'json'
+require 'matrix'
+require 'tf-idf-similarity'
 
 # used to determine if link is restricted by robots.txt
 def is_restricted?(link)
@@ -31,26 +34,28 @@ else
   num_pages = 100
 end
 
-#recieves list of stop words from command line
-stop_words = []
-ARGV.each_with_index do |arg, i|
-  unless i == 0
-    stop_words << arg
-  end
-end
-
 #variables used for File IO
 @pages_file = File.new("pages.txt", "w")
-@pages_file.write("Pages \n\n")
+@pages_file.write("\n")
 @frequency_index = File.new("freq.txt", "w")
 @frequency_index.write("Word Frequency \n\n")
 @doc_id_index = File.new("doc_id.txt", "w")
-@doc_id_index.write("Word Document Id Index \n\n")
+# @doc_id_index.write("Word Document Id Index \n\n")
 @broken_links = File.new("broken_links.txt", "w")
 @broken_links.write("Broken Links \n\n")
 @fp = File.new("links.txt", "w")
 @fp.write("Links \n\n")
+@tokens = File.new("tokens.txt", "w")
 @visited = []
+stop_words = []
+
+# Retreives list of stop words and stores it in array
+File.open("stop_words.txt", "r") do |f|
+  f.each_line do |line|
+    word = line.strip
+    stop_words << word
+  end
+end
 
 @agent = Mechanize.new { |agent| agent.user_agent_alias = "Mac Safari"}
 
@@ -94,7 +99,7 @@ end
 all_text = ''
 all_tokens = {}
 
-id = 0 #used for document id
+id = '' #used for document id
 num = 1 #used to determine how many pages to scrape
 num_jpegs = 0 #keeps track of number of jpegs in site
 
@@ -114,7 +119,7 @@ link_list.each do |link|
     end
 
     # => increment id and num for each iteration
-    id = id + 1
+    id = link
     num = num + 1
     @visited << link # => add link to visited list
     @pages_file.write(link.to_s + "\n") # => write visited link to file
@@ -128,46 +133,53 @@ link_list.each do |link|
     text.encode!('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
     tokens = text.scan(/[a-z]+/i)
 
-    # => collects all unique occurences of words and creates doc_id data structure
+    new_tokens = []
+
+    ## Get rid of stop words
     tokens.each do |token|
       token.downcase!
-      if all_tokens.key?(token) && !stop_words.include?(token)
-        unless all_tokens[token].include?(id)
-          all_tokens[token] << id
-        end
-      elsif !stop_words.include?(token)
-        all_tokens[token] = []
-        all_tokens[token] << id
+      unless stop_words.include?(token)
+        new_tokens << token
       end
     end
-
-    # => handles jpeg number
-    jpegs = html_doc.xpath("//img")
-    jpegs.each do |jpeg|
-      num_jpegs = num_jpegs + 1
+    @tokens.write("#{link}\n")
+    new_tokens.each do |token|
+      @tokens.write("#{token} ")
     end
+    @tokens.write("\n")
+    # => collects all unique occurences of words and creates doc_id data structure
+    # tokens.each do |token|
+    #   token.downcase!
+    #   if all_tokens.key?(token) && !stop_words.include?(token)
+    #     if all_tokens[token].key?("#{id}")
+    #       all_tokens[token]["#{id}"] = all_tokens[token]["#{id}"] + 1
+    #     else
+    #       all_tokens[token]["#{id}"] = 1
+    #     end
+    #   elsif !stop_words.include?(token)
+    #     all_tokens[token] = {}
+    #     all_tokens[token]["#{id}"] = 1
+    #   end
+    # end
 
     # => gathers all links on page and adds to list.
     links = html_doc.xpath("//a/@href")
+    new_link = link.to_s
+    new_link.sub!(link.split('/').last.to_s, "")
     links.each do |link2|
-      if link2.to_s.include?('http://')
+      if link2.to_s.include?('http')
         link_list << link2
+      elsif link2.to_s.include?('mailto:')
+        #do nothing with link
       else
-        link_list << "http://lyle.smu.edu/~fmoore/#{link2}"
-      end
-      if link2.to_s.include?('jpg')
-        num_jpegs = num_jpegs + 1
+        link_list << "#{new_link}#{link2}"
       end
     end
   end
 end
 
-puts "Number of JPEGS => #{num_jpegs}"
-
 # creates document Id index file
-all_tokens.each do |tok|
-  @doc_id_index.write("#{tok[0]} => #{tok[1]}\n")
-end
+@doc_id_index.write(all_tokens.to_json)
 
 # creates word frequency index file
 all_text.encode!('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
