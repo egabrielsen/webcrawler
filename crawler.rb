@@ -39,10 +39,6 @@ end
 @pages_file.write("\n")
 @frequency_index = File.new("freq.txt", "w")
 @frequency_index.write("Word Frequency \n\n")
-@doc_id_index = File.new("doc_id.txt", "w")
-# @doc_id_index.write("Word Document Id Index \n\n")
-@broken_links = File.new("broken_links.txt", "w")
-@broken_links.write("Broken Links \n\n")
 @fp = File.new("links.txt", "w")
 @fp.write("Links \n\n")
 @tokens = File.new("tokens.txt", "w")
@@ -131,7 +127,7 @@ link_list.each do |link|
 
     # Pretend that all words we care about contain only a-z, 0-9, or underscores
     text.encode!('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
-    tokens = text.scan(/[a-z]+/i)
+    tokens = text.scan(/[a-z]+/i)  #only take in words with a - z
 
     new_tokens = []
 
@@ -178,9 +174,6 @@ link_list.each do |link|
   end
 end
 
-# creates document Id index file
-@doc_id_index.write(all_tokens.to_json)
-
 # creates word frequency index file
 all_text.encode!('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '')
 words = all_text.scan(/[a-z]+/i)
@@ -193,16 +186,4 @@ end
 # lists all links
 link_list.each do |link|
   @fp.write(link.to_s + "\n")
-end
-
-# lists all broken links
-link_list.each do |link|
-  unless link.include?('mailto:') || is_restricted?(link)
-    begin
-      page = @agent.get(link)
-    rescue Exception => e
-      @broken_links.write("#{link} \n")
-      page = e.page
-    end
-  end
 end
